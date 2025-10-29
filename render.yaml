@@ -1,34 +1,52 @@
 services:
-  # The Frontend Service (React App)
-  - type: web
-    name: shonfxkenya-frontend
-    env: static
-    staticPublishPath: ./frontend/build
-    # This rule redirects all traffic to the backend, except for static files
-    routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://shonfxkenya-backend.onrender.com/api/* # Make sure backend name matches
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: REACT_APP_BACKEND_URL
-        fromService:
-          type: web
-          name: shonfxkenya-backend
-          property: url
-
   # The Backend Service (Python/Flask App)
+  # This service runs your Python logic.
   - type: web
     name: shonfxkenya-backend
     env: python
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    repo: https://github.com/YOUR_USERNAME/YOUR_REPO_NAME # IMPORTANT: Change this!
-    region: frankfurt # Or choose a region closer to you
+    repo: https://github.com/YOUR_USERNAME/YOUR_REPO_NAME # IMPORTANT: Make sure this is correct!
+    region: frankfurt # Or your preferred region
+    # Health check to ensure the service is running
+    healthCheckPath: /
     envVars:
       - key: DERIV_API_TOKEN
-        sync: false # Keep this secret!
+        sync: false # This will be set as a secret in the Render dashboard
       - key: PYTHON_VERSION
         value: 3.9
+      # This tells the frontend where to find the backend
+      - key: RENDER_EXTERNAL_URL
+        fromService:
+          type: web
+          name: shonfxkenya-backend
+          property: url
+
+  # The Frontend Service (React Static Site)
+  # This service serves the user interface.
+  - type: web
+    name: shonfxkenya-frontend
+    env: static
+    # Tells Render to only rebuild when frontend code changes
+    buildFilter:
+      paths:
+      - frontend/**
+    # Explicit build command to run inside the 'frontend' directory
+    buildCommand: cd frontend && npm install && npm run build
+    # Directory containing the built static files, relative to the repo root
+    staticPublishPath: ./frontend/build
+    # Routing rules to handle Single Page Application (SPA) logic
+    routes:
+      - type: rewrite
+        source: /api/(.*)
+        destination: /api/$1
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # This provides the backend URL to your React app
+      - key: REACT_APP_BACKEND_URL
+        fromService:
+          type: web
+          name: shonfxkenya-backend
+          property: url
