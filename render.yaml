@@ -1,23 +1,23 @@
 services:
   # The Backend Service (Python/Flask App)
-  # This service needs 'plan: free' to avoid payment requests.
   - type: web
     name: shonfxkenya-backend
     env: python
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    plan: free # This is CORRECT and NECESSARY for the backend.
+    # THIS IS THE CRUCIAL FIX:
+    # It tells Render to use the 'backend' folder as the context for the build.
+    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile # The path is now relative to the context
+    plan: free
     healthCheckPath: /
     envVars:
       - key: DERIV_API_TOKEN
         sync: false # Set this secret in the Render dashboard
 
   # The Frontend Service (React Static Site)
-  # This service is free by default and MUST NOT have the 'plan' line.
   - type: web
     name: shonfxkenya-frontend
     env: static
-    # The 'plan: free' line has been REMOVED from here because it's invalid.
     buildFilter:
       paths:
       - frontend/**
