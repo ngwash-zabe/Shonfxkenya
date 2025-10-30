@@ -6,35 +6,28 @@ services:
     env: python
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    # Health check to ensure the service is running before frontend builds
+    # THIS IS THE MOST IMPORTANT LINE TO FIX THE PAYMENT ISSUE
+    plan: free 
     healthCheckPath: /
-    # Environment variable for your secret token
     envVars:
       - key: DERIV_API_TOKEN
         sync: false # Set this secret in the Render dashboard
 
   # The Frontend Service (React Static Site)
-  # This service serves the user interface and proxies API calls to the backend.
+  # This service is already on the free plan by default.
   - type: web
     name: shonfxkenya-frontend
     env: static
-    # Tells Render to only rebuild when frontend code changes
+    plan: free # Good practice to be explicit here too
     buildFilter:
       paths:
       - frontend/**
-    # Explicit build command to run inside the 'frontend' directory
     buildCommand: cd frontend && npm install && npm run build
-    # Directory containing the built static files
     staticPublishPath: ./frontend/build
-    # Routing Rules: This is the key to the fix!
     routes:
-      # Rule 1: Proxy API requests
-      # Any request starting with /api will be sent to the backend service.
       - type: rewrite
         source: /api/:path*
         destination: http://shonfxkenya-backend/:path*
-      # Rule 2: Handle page navigation
-      # Any other request will serve your main app file, allowing React to handle routing.
       - type: rewrite
         source: /*
         destination: /index.html
