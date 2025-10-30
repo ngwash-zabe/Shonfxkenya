@@ -78,14 +78,11 @@ function Login({ onLoginSuccess }) {
     setIsLoading(true);
     setError('');
 
-    // --- IMPORTANT ---
-    // The backend URL needs to be set correctly in production
-    // We will handle this with environment variables in Render
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-
     try {
-      // We send the credentials, but the backend will use the secure API token
-      const response = await axios.post(`${backendUrl}/api/login`, { email, password });
+      // THIS IS THE CORRECTED LINE.
+      // We use a relative path '/api/login'. Render's proxy will automatically
+      // send this request to your backend service.
+      const response = await axios.post('/api/login', { email, password });
       onLoginSuccess(response.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
